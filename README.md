@@ -1,4 +1,12 @@
-Version 0.1.0
+# The Binding of Nexys
+
+### Version 0.1.2
+
+#### Matt Hennes and Tyler Heucke
+
+## Changelog
+
+### Version 0.1.0
 - Refactored to store player location in r30 and r31
 - Added draw_player subroutine
 - Added a bullet location stored in r28 and r29
@@ -15,8 +23,8 @@ Version 0.1.0
 - Added delay constant for the time of the delay
 - Added comments to things and normalized spacings
 
-Version 0.1.1
+### Version 0.1.1
 - Fixed spacing and replaced tab characters with spaces
 
-Version 0.1.2
+### Version 0.1.2
 - Implemented consistent indentation style
