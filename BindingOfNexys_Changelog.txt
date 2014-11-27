@@ -17,3 +17,6 @@ Version 0.1.0
 
 Version 0.1.1
 - Fixed spacing and replaced tab characters with spaces
+
+Version 0.1.2
+- Implemented consistent indentation style
