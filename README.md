@@ -4,6 +4,11 @@
 
 #### Matt Hennes and Tyler Heucke
 
+## Controls
+
+- WASD for movement
+- Arrow keys for shooting
+
 ## Changelog
 
 ### Version 0.1.0
