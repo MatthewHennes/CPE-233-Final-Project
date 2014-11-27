@@ -1,3 +1,4 @@
+Version 0.1.0
 - Refactored to store player location in r30 and r31
 - Added draw_player subroutine
 - Added a bullet location stored in r28 and r29
@@ -13,3 +14,6 @@
 - Added a delay_loop subroutine and a call to it in main
 - Added delay constant for the time of the delay
 - Added comments to things and normalized spacings
+
+Version 0.1.1
+- Fixed spacing and replaced tab characters with spaces

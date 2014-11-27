@@ -1,9 +1,10 @@
 ;--------------------------------------------------------------------------
 ;- The Binding of Nexys
 ;- Programmers: Matt Hennes & Tyler Heucke
-;- Date: 11/20/14
+;- Creation Date: 11/20/14
 ;-
-;- Description: ...
+;- Version:     0.1.0
+;- Description: A Binding of Isaac clone running on the RAT CPU
 ;--------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
@@ -23,31 +24,31 @@
 ;--------------------------------------------------------------------------
 ;- Misc Constants
 ;--------------------------------------------------------------------------
-.EQU DELAY					= 0xFF ; Delay timer
+.EQU DELAY                  = 0xFF ; Delay timer
 
-.EQU BG_COLOR     			= 0x00 ; Background:  black
-.EQU WALL_COLOR   			= 0xFF ; Walls:       white
-.EQU ENEMY_COLOR  			= 0xE0 ; red
-.EQU PLAYER_COLOR 			= 0x1C ; green
+.EQU BG_COLOR               = 0x00 ; Black
+.EQU WALL_COLOR             = 0xFF ; White
+.EQU ENEMY_COLOR            = 0xE0 ; Red
+.EQU PLAYER_COLOR           = 0x1C ; Green
 
-.EQU BULLET_DIRECTION_UP	= 0x00
-.EQU BULLET_DIRECTION_RIGHT	= 0x01
-.EQU BULLET_DIRECTION_DOWN	= 0x02
-.EQU BULLET_DIRECTION_LEFT	= 0x03
+.EQU BULLET_DIRECTION_UP    = 0x00
+.EQU BULLET_DIRECTION_RIGHT = 0x01
+.EQU BULLET_DIRECTION_DOWN  = 0x02
+.EQU BULLET_DIRECTION_LEFT  = 0x03
 
-.EQU BULLET_COLOR 			= 0x03 ; blue
+.EQU BULLET_COLOR           = 0x03 ; Blue
 
-.EQU KEY_W        			= 0x1D
-.EQU KEY_A        			= 0x1C
-.EQU KEY_S        			= 0x1B
-.EQU KEY_D        			= 0x23
+.EQU KEY_W                  = 0x1D
+.EQU KEY_A                  = 0x1C
+.EQU KEY_S                  = 0x1B
+.EQU KEY_D                  = 0x23
 
-.EQU ARROW_UP        		= 0x75
-.EQU ARROW_DOWN      		= 0x72
-.EQU ARROW_LEFT      		= 0x6B
-.EQU ARROW_RIGHT     		= 0x74
+.EQU ARROW_UP               = 0x75
+.EQU ARROW_DOWN             = 0x72
+.EQU ARROW_LEFT             = 0x6B
+.EQU ARROW_RIGHT            = 0x74
 
-.EQU KEY_UP       			= 0xF0 ; key release data
+.EQU KEY_UP                 = 0xF0 ; key release data
 ;--------------------------------------------------------------------------
 
 ;-------------------------------------------------------------
@@ -63,19 +64,19 @@
 ;-------------------------------------------------------------
 ; Global Register Usage
 ;-------------------------------------------------------------
-;- r0: used for delay loop timing
-;- r3: used for PS2 resetting
-;- r4: used for drawing dots
-;- r5: used for drawing dots
-;- r6 is used for color
-;- r7 is used for working Y coordinate
-;- r8 is used for working X coordinate
-;- r15: stores key-up info flag
-;- r27: stores bullet direction of travel
-;- r28: stores bullet x coordinate
-;- r29: stores bullet y coordinate
-;- r30: stores player x coordinate
-;- r31: stores player y coordinate
+;- R00:  delay loop timing
+;- R03:  PS2 resetting
+;- R04:  drawing dots
+;- R05:  drawing dots
+;- R06:  color
+;- R07:  working Y coordinate
+;- R08:  working X coordinate
+;- R15: stores key-up info flag
+;- R27: stores bullet direction of travel
+;- R28: stores bullet x coordinate
+;- R29: stores bullet y coordinate
+;- R30: stores player x coordinate
+;- R31: stores player y coordinate
 ;---------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
@@ -84,82 +85,82 @@
 .CSEG
 .ORG          0x01
 
-init:         MOV   R15,    0x00    ; clear key-up flag
-              CALL  draw_background ; draw using default color
-              CALL  draw_walls      ; 4 lines around edge of screen
-			  MOV	R30,	0x14	; Starting player x-coord = 20
-			  MOV	R30,	0x0F	; Starting player y-coord = 15
-              CALL  draw_player     ; draw green hero
-              SEI
+init:       MOV   R15,    0x00      ; clear key-up flag
+            CALL  draw_background   ; draw using default color
+            CALL  draw_walls        ; 4 lines around edge of screen
+            MOV   R30,    0x14      ; Starting player x-coord = 20
+            MOV   R30,    0x0F      ; Starting player y-coord = 15
+            CALL  draw_player       ; draw green hero
+            SEI                     ; set interrupt to receive key presses
 
-main:         CALL	move_bullet		; update the bullet's location based on its direction
-			  CALL	draw_bullet		; draw the bullet in its new location
-			  CALL	draw_player		; re-draw the player, just in case it was drawn over
-			  CALL	delay_loop		; create a delay between in-game "ticks"
-              BRN   main			; repeat main subroutine
+main:       CALL  move_bullet       ; update the bullet's location
+            CALL  draw_bullet       ; draw the bullet
+            CALL  draw_player       ; draw the player
+            CALL  delay_loop        ; create a delay between in-game "ticks"
+            BRN   main              ; repeat main subroutine
 
 ;--------------------------------------------------------------
 ; Interrup Service Routine - Handles Interrupts from keyboard
 ;--------------------------------------------------------------
 ; Tweaked Registers; r2,r3,r15
 ;--------------------------------------------------------------
-isr:      CMP   r15, int_flag        ; check key-up flag
-          BRNE  continue
-          MOV   r15, 0x00            ; clear key-up flag
-          BRN   reset_ps2_register
+isr:          CMP   r15, int_flag        ; check key-up flag
+              BRNE  continue
+              MOV   r15, 0x00            ; clear key-up flag
+              BRN   reset_ps2_register
 
-continue: IN    r2, PS2_KEY_CODE     ; get keycode data
+continue:     IN    r2, PS2_KEY_CODE     ; get keycode data
 
-check_w:  CMP   r2,KEY_W             ; was 'w' pressed?
-          BRNE  check_a
-          CALL  move_up
-          BRN   reset_ps2_register
+check_w:      CMP   r2,KEY_W             ; was 'w' pressed?
+              BRNE  check_a
+              CALL  move_up
+              BRN   reset_ps2_register
 
-check_a:  CMP   r2,KEY_A             ; was 'a' pressed?
-          BRNE  check_s
-          CALL  move_left
-          BRN   reset_ps2_register
+check_a:      CMP   r2,KEY_A             ; was 'a' pressed?
+              BRNE  check_s
+              CALL  move_left
+              BRN   reset_ps2_register
 
-check_s:  CMP   r2,KEY_S             ; was 's' pressed?
-          BRNE  check_d
-          CALL  move_down
-          BRN   reset_ps2_register
+check_s:      CMP   r2,KEY_S             ; was 's' pressed?
+              BRNE  check_d
+              CALL  move_down
+              BRN   reset_ps2_register
 
-check_d:  CMP   r2,KEY_D             ; was 'd' pressed?
-          BRNE  check_up
-          CALL  move_right
-          BRN   reset_ps2_register
+check_d:      CMP   r2,KEY_D             ; was 'd' pressed?
+              BRNE  check_up
+              CALL  move_right
+              BRN   reset_ps2_register
 
-check_up:  CMP   r2,ARROW_UP         ; was 'up' pressed?
-          BRNE  check_down
-          CALL  shoot_up
-          BRN   reset_ps2_register
+check_up:     CMP   r2,ARROW_UP         ; was 'up' pressed?
+              BRNE  check_down
+              CALL  shoot_up
+              BRN   reset_ps2_register
 
-check_down:  CMP   r2,ARROW_DOWN     ; was 'down' pressed?
-          BRNE  check_left
-          CALL  shoot_down
-          BRN   reset_ps2_register
+check_down:   CMP   r2,ARROW_DOWN     ; was 'down' pressed?
+              BRNE  check_left
+              CALL  shoot_down
+              BRN   reset_ps2_register
 
-check_left:  CMP   r2,ARROW_LEFT     ; was 'left' pressed?
-          BRNE  check_right
-          CALL  shoot_left
-          BRN   reset_ps2_register
+check_left:   CMP   r2,ARROW_LEFT     ; was 'left' pressed?
+              BRNE  check_right
+              CALL  shoot_left
+              BRN   reset_ps2_register
 
 check_right:  CMP   r2,ARROW_RIGHT   ; was 'right' pressed?
-          BRNE  key_up_check
-          CALL  shoot_right
-          BRN   reset_ps2_register
+              BRNE  key_up_check
+              CALL  shoot_right
+              BRN   reset_ps2_register
 
 key_up_check:
-          CMP   r2,KEY_UP            ; look for key-up code
-          BREQ  set_skip_flag        ; branch if found
+              CMP   r2,KEY_UP            ; look for key-up code
+              BREQ  set_skip_flag        ; branch if found
 
-          BRN   reset_ps2_register
+              BRN   reset_ps2_register
 
 
 set_skip_flag:
-          ADD   r15, 0x01            ; indicate key-up found
-          BRN   reset_ps2_register
+              ADD   r15, 0x01            ; indicate key-up found
+              BRN   reset_ps2_register
 
 ;reset_skip_flag:
 ;          MOV   r15, 0x00           ; indicate key-up handles
@@ -180,65 +181,65 @@ reset_ps2_register:
 ;-------------------------------------------------------------------
 ; do something meaningful when particular keys are pressed
 ;-------------------------------------------------------------------
-move_up:      CMP  R31,    0x01		; Check if player is already at the edge of the screen
-              BREQ move_up_end		; If so, do not move the player
-              MOV  R6,    BG_COLOR	; Set draw-color to the background color
-			  MOV  R8,	   R30		; Set draw-x-coord to the player's old location
-			  MOV  R7,	   R31		; Set draw-y-coord to the player's old location
-              CALL draw_dot			; Fill in the player's old location with the background color
-              SUB  R31,    0x01		; Move the player up
-              CALL draw_player		; Draw the player in the new location
+move_up:      CMP  R31,    0x01   ; Check if player is already at the edge of the screen
+              BREQ move_up_end    ; If so, do not move the player
+              MOV  R6,    BG_COLOR  ; Set draw-color to the background color
+              MOV  R8,     R30    ; Set draw-x-coord to the player's old location
+              MOV  R7,     R31    ; Set draw-y-coord to the player's old location
+              CALL draw_dot     ; Fill in the player's old location with the background color
+              SUB  R31,    0x01   ; Move the player up
+              CALL draw_player    ; Draw the player in the new location
 move_up_end:
               RET
 
-move_left:    CMP  R30,    0x01		; Check if player is already at the edge of the screen
-              BREQ move_left_end	; If so, do not move the player
-              MOV  R6,    BG_COLOR	; Set draw-color to the background color
-			  MOV  R8,	   R30		; Set draw-x-coord to the player's old location
-			  MOV  R7,	   R31		; Set draw-y-coord to the player's old location
-              CALL draw_dot			; Fill in the player's old location with the background color
-              SUB  R30,    0x01		; Move the player left
-              CALL draw_player		; Draw the player in the new location
+move_left:    CMP  R30,    0x01   ; Check if player is already at the edge of the screen
+              BREQ move_left_end  ; If so, do not move the player
+              MOV  R6,    BG_COLOR  ; Set draw-color to the background color
+              MOV  R8,     R30    ; Set draw-x-coord to the player's old location
+              MOV  R7,     R31    ; Set draw-y-coord to the player's old location
+              CALL draw_dot     ; Fill in the player's old location with the background color
+              SUB  R30,    0x01   ; Move the player left
+              CALL draw_player    ; Draw the player in the new location
 move_left_end:
               RET
 
-move_down:    CMP  R31,    0x1C		; Check if player is already at the edge of the screen
-              BREQ move_down_end	; If so, do not move the player
-              MOV  R6,    BG_COLOR	; Set draw-color to the background color
-			  MOV  R8,	   R30		; Set draw-x-coord to the player's old location
-			  MOV  R7,	   R31		; Set draw-y-coord to the player's old location
-              CALL draw_dot			; Fill in the player's old location with the background color
-              ADD  R31,    0x01		; Move the player down
-              CALL draw_player		; Draw the player in the new location
+move_down:    CMP  R31,    0x1C   ; Check if player is already at the edge of the screen
+              BREQ move_down_end  ; If so, do not move the player
+              MOV  R6,    BG_COLOR  ; Set draw-color to the background color
+              MOV  R8,     R30    ; Set draw-x-coord to the player's old location
+              MOV  R7,     R31    ; Set draw-y-coord to the player's old location
+              CALL draw_dot     ; Fill in the player's old location with the background color
+              ADD  R31,    0x01   ; Move the player down
+              CALL draw_player    ; Draw the player in the new location
 move_down_end:
               RET
 
-move_right:   CMP  R8,    0x26		; Check if player is already at the edge of the screen
-              BREQ move_right_end	; If so, do not move the player
-              MOV  R6,   BG_COLOR	; Set draw-color to the background color
-			  MOV  R8,	   R30		; Set draw-x-coord to the player's old location
-			  MOV  R7,	   R31		; Set draw-y-coord to the player's old location
-              CALL draw_dot			; Fill in the player's old location with the background color
-              ADD  R8,    0x01		; Move the player right
-              CALL draw_player		; Draw th player in the new location
+move_right:   CMP  R8,    0x26    ; Check if player is already at the edge of the screen
+              BREQ move_right_end ; If so, do not move the player
+              MOV  R6,   BG_COLOR ; Set draw-color to the background color
+              MOV  R8,     R30    ; Set draw-x-coord to the player's old location
+              MOV  R7,     R31    ; Set draw-y-coord to the player's old location
+              CALL draw_dot     ; Fill in the player's old location with the background color
+              ADD  R8,    0x01    ; Move the player right
+              CALL draw_player    ; Draw th player in the new location
 move_right_end:
               RET
 
-shoot_up:     MOV  R27,	  BULLET_DIRECTION_UP		; Set the bullet direction to up
-			  MOV  R28,	  R30						; Set the bullet x-coord to the player x-coord
-			  MOV  R29,	  R31						; Set the bullet y-coord to the player y-coord
+shoot_up:     MOV  R27,   BULLET_DIRECTION_UP   ; Set the bullet direction to up
+              MOV  R28,   R30           ; Set the bullet x-coord to the player x-coord
+              MOV  R29,   R31           ; Set the bullet y-coord to the player y-coord
 
-shoot_right:  MOV  R27,	  BULLET_DIRECTION_RIGHT	; Set the bullet direction to up
-			  MOV  R28,	  R30						; Set the bullet x-coord to the player x-coord
-			  MOV  R29,	  R31						; Set the bullet y-coord to the player y-coord
+shoot_right:  MOV  R27,   BULLET_DIRECTION_RIGHT  ; Set the bullet direction to up
+              MOV  R28,   R30           ; Set the bullet x-coord to the player x-coord
+              MOV  R29,   R31           ; Set the bullet y-coord to the player y-coord
 
-shoot_down:   MOV  R27,	  BULLET_DIRECTION_DOWN		; Set the bullet direction to down
-			  MOV  R28,	  R30						; Set the bullet x-coord to the player x-coord
-			  MOV  R29,	  R31						; Set the bullet y-coord to the player y-coord
+shoot_down:   MOV  R27,   BULLET_DIRECTION_DOWN   ; Set the bullet direction to down
+              MOV  R28,   R30           ; Set the bullet x-coord to the player x-coord
+              MOV  R29,   R31           ; Set the bullet y-coord to the player y-coord
 
-shoot_left:   MOV  R27,	  BULLET_DIRECTION_LEFT		; Set the bullet direction to left
-			  MOV  R28,	  R30						; Set the bullet x-coord to the player x-coord
-			  MOV  R29,	  R31						; Set the bullet y-coord to the player y-coord
+shoot_left:   MOV  R27,   BULLET_DIRECTION_LEFT   ; Set the bullet direction to left
+              MOV  R28,   R30           ; Set the bullet x-coord to the player x-coord
+              MOV  R29,   R31           ; Set the bullet y-coord to the player y-coord
 ;--------------------------------------------------------------------
 
 ;--------------------------------------------------------------------
@@ -247,33 +248,33 @@ shoot_left:   MOV  R27,	  BULLET_DIRECTION_LEFT		; Set the bullet direction to l
 ;- Moves the bullet to the next location based on its move direction
 ;-
 ;- Parameters:
-;-	r27 = bullet direction of motion
-;-	r28 = bullet x-coordinate
-;-	r29 = bullet y-coordinate
+;-  r27 = bullet direction of motion
+;-  r28 = bullet x-coordinate
+;-  r29 = bullet y-coordinate
 ;-
 ;- Tweaked registers: r28, r29
 ;--------------------------------------------------------------------
 move_bullet:
-		CMP		R27, BULLET_DIRECTION_UP	; Check if the bullet was fired upwards
-		BREQ	bullet_move_up				; Move it appropriately
-		CMP		R27, BULLET_DIRECTION_RIGHT	; Check if the bullet was fired to the right
-		BREQ	bullet_move_right			; Move it appropriately
-		CMP		R27, BULLET_DIRECTION_DOWN	; Check if the bullet was fired downwards
-		BREQ	bullet_move_down			; Move it appropriately
-		CMP		R27, BULLET_DIRECTION_LEFT	; Check if the bullet was fired to the left
-		BREQ	bullet_move_left			; Move it appropriately
+    CMP   R27, BULLET_DIRECTION_UP  ; Check if the bullet was fired upwards
+    BREQ  bullet_move_up        ; Move it appropriately
+    CMP   R27, BULLET_DIRECTION_RIGHT ; Check if the bullet was fired to the right
+    BREQ  bullet_move_right     ; Move it appropriately
+    CMP   R27, BULLET_DIRECTION_DOWN  ; Check if the bullet was fired downwards
+    BREQ  bullet_move_down      ; Move it appropriately
+    CMP   R27, BULLET_DIRECTION_LEFT  ; Check if the bullet was fired to the left
+    BREQ  bullet_move_left      ; Move it appropriately
 bullet_move_up:
-		SUB		R29, 0x01					; Move the bullet up
-		RET
+    SUB   R29, 0x01         ; Move the bullet up
+    RET
 bullet_move_right:
-		ADD		R28, 0x01					; Move the bullet to the right
-		RET
+    ADD   R28, 0x01         ; Move the bullet to the right
+    RET
 bullet_move_down:
-		ADD		R29, 0x01					; Move the bullet downwards
-		RET
+    ADD   R29, 0x01         ; Move the bullet downwards
+    RET
 bullet_move_left:
-		SUB		R28, 0x01					; Move the bullet to the left
-		RET
+    SUB   R28, 0x01         ; Move the bullet to the left
+    RET
 ;--------------------------------------------------------------------
 
 ;--------------------------------------------------------------------
@@ -419,19 +420,19 @@ dd_out:    OUT   r5,VGA_LADD   ; write low 8 address bits to register
 
 ;---------------------------------------------------------------------
 ;- Subroutine: draw_player
-;- 
+;-
 ;- This subroutine draws the player on the display at the correct coordinates.
-;- 
+;-
 ;- (X, Y) = (r30, r31)
-;- 
+;-
 ;- Tweaked registers: r4, r5, r6, r7, r8
 ;---------------------------------------------------------------------
 draw_player:
-		   MOV	R6, PLAYER_COLOR	; Set the draw-color to the player's color
-		   MOV	R7,R31				; Move the player's y coord into the draw y coord
-		   MOV	R8,R30				; Move the player's x coord into the draw x coord
-		   CALL draw_dot			; Draw a dot of the specified color at the specified location
-		   RET
+       MOV  R6, PLAYER_COLOR  ; Set the draw-color to the player's color
+       MOV  R7,R31        ; Move the player's y coord into the draw y coord
+       MOV  R8,R30        ; Move the player's x coord into the draw x coord
+       CALL draw_dot      ; Draw a dot of the specified color at the specified location
+       RET
 ;---------------------------------------------------------------------
 
 ;---------------------------------------------------------------------
@@ -444,30 +445,30 @@ draw_player:
 ;- Tweaked registers: r4, r5, r6, r7, r8
 ;---------------------------------------------------------------------
 draw_bullet:
-		MOV R6, BULLET_COLOR	; Set the draw-color to the bullet's color
-		MOV R7, R29				; Move the bullet's y coord into the draw y coord
-		MOV R8, R28				; Move the bullet's x coord into the draw x coord
-		CALL draw_dot			; Draw a dot of the specified color at the specified location
-		RET
+    MOV R6, BULLET_COLOR  ; Set the draw-color to the bullet's color
+    MOV R7, R29       ; Move the bullet's y coord into the draw y coord
+    MOV R8, R28       ; Move the bullet's x coord into the draw x coord
+    CALL draw_dot     ; Draw a dot of the specified color at the specified location
+    RET
 ;---------------------------------------------------------------------
 
 ;---------------------------------------------------------------------
 ;- Subroitine: delay_loop
 ;-
 ;- Parameters:
-;-	r0 = loop count
+;-  r0 = loop count
 ;-
 ;- Tweaked Registers: r0
 ;---------------------------------------------------------------------
 delay_loop:
-		MOV R0, DELAY				; Move in the number of iterations to run the loop
+    MOV R0, DELAY       ; Move in the number of iterations to run the loop
 delay_loop_inside:
-		CMP		R0, 0x00			; Check if the number of iterations remaining is 0
-		BREQ	delay_loop_end		; If no iterations remaining, end the delay
-		SUB		R0, 0x01			; Decrament the number of iterations remaining
-		BRN		delay_loop_inside	; Restart loop
+    CMP   R0, 0x00      ; Check if the number of iterations remaining is 0
+    BREQ  delay_loop_end    ; If no iterations remaining, end the delay
+    SUB   R0, 0x01      ; Decrament the number of iterations remaining
+    BRN   delay_loop_inside ; Restart loop
 delay_loop_end:
-		RET
+    RET
 ;---------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
@@ -475,4 +476,4 @@ delay_loop_end:
 ;--------------------------------------------------------------------------
 .CSEG
 .ORG 0x3FF
-        BRN    isr	; Handle the interrupt
+        BRN    isr  ; Handle the interrupt
