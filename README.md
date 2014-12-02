@@ -33,3 +33,9 @@
 
 ### Version 0.1.2
 - Implemented consistent indentation style
+
+### Version 0.1.3
+- Fixed bullet drawing
+- Fixed inability to move right
+- Added a single, randomly moving enemy
+- Shooting the enemy kills it
