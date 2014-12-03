@@ -3,28 +3,26 @@
 ;- Programmers: Matt Hennes & Tyler Heucke
 ;- Creation Date: 11/20/14
 ;-
-;- Version:     0.1.4
+;- Version:     0.2.0
 ;- Description: A Binding of Isaac clone running on the RAT CPU
 ;--------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
 ;- Port Constants
 ;--------------------------------------------------------------------------
-.EQU SWITCH_PORT = 0x20 ; port for switches     INPUT
-.EQU LED_PORT    = 0x40 ; port for LEDs         OUTPUT
-.EQU RAND_PORT   = 0x50 ; port for random number
-.EQU BTN_PORT    = 0x21 ; port for buttons      INPUT
-.EQU VGA_HADD    = 0x90
-.EQU VGA_LADD    = 0x91
-.EQU VGA_COLOR   = 0x92
-.EQU KEYBOARD    = 0x25
-.EQU SSEG        = 0x81
-.EQU LEDS        = 0x40
+.EQU SWITCH_PORT = 0x20 ; port for switches      INPUT
+.EQU RAND_PORT   = 0x50 ; port for random number INPUT
+.EQU BTN_PORT    = 0x21 ; port for buttons       INPUT
+.EQU KEYBOARD    = 0x25 ; port for keyoard       INPUT
+.EQU VGA_HADD    = 0x90 ; port for vga x         OUTPUT
+.EQU VGA_LADD    = 0x91 ; port for vga y         OUTPUT
+.EQU VGA_COLOR   = 0x92 ; port for vga color     OUTPUT
+.EQU LED_PORT    = 0x40 ; port for LEDs          OUTPUT
+.EQU SSEG        = 0x81 ; port for display       OUTPUT
 
 ;-- Keyboard Stuff -------------------------------------------------------
 .EQU PS2_KEY_CODE = 0x44 ; Port for Key Code (data)
 .EQU PS2_CONTROL  = 0x46 ; Ready for data control
-
 .EQU int_flag     = 0x01 ; interrupt data from keyboard
 ;--------------------------------------------------------------------------
 
@@ -38,16 +36,11 @@
 .EQU ENEMY_COLOR            = 0xE0 ; Red
 .EQU PLAYER_COLOR           = 0x1C ; Green
 
-.EQU BULLET_DIRECTION_UP    = 0x00
-.EQU BULLET_DIRECTION_RIGHT = 0x01
-.EQU BULLET_DIRECTION_DOWN  = 0x02
-.EQU BULLET_DIRECTION_LEFT  = 0x03
-.EQU BULLET_DIRECTION_NONE  = 0x04
-
-.EQU ENEMY_DIRECTION_UP    = 0x00
-.EQU ENEMY_DIRECTION_RIGHT = 0x01
-.EQU ENEMY_DIRECTION_DOWN  = 0x02
-.EQU ENEMY_DIRECTION_LEFT  = 0x03
+.EQU DIRECTION_UP           = 0x00
+.EQU DIRECTION_RIGHT        = 0x01
+.EQU DIRECTION_DOWN         = 0x02
+.EQU DIRECTION_LEFT         = 0x03
+.EQU DIRECTION_NONE         = 0x04
 
 .EQU BULLET_COLOR           = 0x03 ; Blue
 ;--------------------------------------------------------------------------
@@ -129,24 +122,24 @@ init:
     MOV   R00,    0x14      ; Starting player x-coord = 20
     MOV   R01,    0x0F      ; Starting player y-coord = 15
     CALL  draw_player       ; draw green hero
-    MOV   R06,    0x05
-    MOV   R07,    0x05
-    CALL  draw_enemy
+    MOV   R06,    0xFE      ; set enemy spawn
+    MOV   R07,    0xFE      ; set enemy spawn
+    CALL  draw_enemy        ; draw first enemy
     SEI                     ; set interrupt to receive key presses
 
 main:
-    IN    R05,    RAND_PORT
+    IN    R05,    RAND_PORT ; get a random number
     CALL  move_bullet       ; update the bullet's location
     CALL  draw_bullet       ; draw the bullet
-    CALL  detect_hits
-    CMP   R26, 0x00
-    BRNE  no_move
-    CALL  move_enemy
-    MOV   R26, 0x30
+    CALL  detect_hits       ; check if bullet hit enemy
+    CMP   R26, 0x00         ; enemy monster delay check
+    BRNE  no_move           ; branch if still counting down
+    CALL  move_enemy        ; otherwise move monster 
+    MOV   R26, 0x30         ; and reset counter
 no_move:
-    SUB   R26, 0x01
+    SUB   R26, 0x01         ; subtract one from delay
     CALL  draw_player       ; draw the player
-    CALL  draw_enemy
+    CALL  draw_enemy        ; draw the enemy
     CALL  delay_loop        ; create a delay between in-game "ticks"
     BRN   main              ; repeat main subroutine
 
@@ -290,25 +283,25 @@ move_right_end:
     RET
 
 shoot_up:
-    MOV  R02,   BULLET_DIRECTION_UP   ; Set the bullet direction to up
+    MOV  R02,   DIRECTION_UP   ; Set the bullet direction to up
     MOV  R03,   R00           ; Set the bullet x-coord to the player x-coord
     MOV  R04,   R01           ; Set the bullet y-coord to the player y-coord
     RET
 
 shoot_right:
-    MOV  R02,   BULLET_DIRECTION_RIGHT  ; Set the bullet direction to up
+    MOV  R02,   DIRECTION_RIGHT  ; Set the bullet direction to up
     MOV  R03,   R00           ; Set the bullet x-coord to the player x-coord
     MOV  R04,   R01           ; Set the bullet y-coord to the player y-coord
     RET
 
 shoot_down:
-    MOV  R02,   BULLET_DIRECTION_DOWN   ; Set the bullet direction to down
+    MOV  R02,   DIRECTION_DOWN   ; Set the bullet direction to down
     MOV  R03,   R00           ; Set the bullet x-coord to the player x-coord
     MOV  R04,   R01           ; Set the bullet y-coord to the player y-coord
     RET
 
 shoot_left:
-    MOV  R02,   BULLET_DIRECTION_LEFT   ; Set the bullet direction to left
+    MOV  R02,   DIRECTION_LEFT   ; Set the bullet direction to left
     MOV  R03,   R00           ; Set the bullet x-coord to the player x-coord
     MOV  R04,   R01           ; Set the bullet y-coord to the player y-coord
     RET
@@ -327,24 +320,24 @@ shoot_left:
 ;- Tweaked registers: R03, R04
 ;--------------------------------------------------------------------
 move_bullet:
-    CALL  check_walls
-    CMP   R02,  BULLET_DIRECTION_NONE
-    BREQ  bullet_stop
-    MOV   R20,  R03
-    MOV   R21,  R04
-    MOV   R19,  BG_COLOR
-    CALL  draw_dot
-    CMP   R02,  BULLET_DIRECTION_UP  ; Check if the bullet was fired upwards
+    CALL  check_walls           ; Check if bullet has hit wall
+    CMP   R02,  DIRECTION_NONE  ; Check if bullet did hit wall
+    BREQ  bullet_stop           ; Only move bullet if still moving
+    MOV   R19,  BG_COLOR        ; Paint old location with floor color
+    MOV   R20,  R03             ; Paint old location
+    MOV   R21,  R04             ; Paint old location
+    CALL  draw_dot              ; Paint!
+    CMP   R02,  DIRECTION_UP    ; Check if the bullet was fired upwards
     BREQ  bullet_move_up        ; Move it appropriately
-    CMP   R02,  BULLET_DIRECTION_RIGHT ; Check if the bullet was fired to the right
+    CMP   R02,  DIRECTION_RIGHT ; Check if the bullet was fired to the right
     BREQ  bullet_move_right     ; Move it appropriately
-    CMP   R02,  BULLET_DIRECTION_DOWN  ; Check if the bullet was fired downwards
+    CMP   R02,  DIRECTION_DOWN  ; Check if the bullet was fired downwards
     BREQ  bullet_move_down      ; Move it appropriately
-    CMP   R02,  BULLET_DIRECTION_LEFT  ; Check if the bullet was fired to the left
+    CMP   R02,  DIRECTION_LEFT  ; Check if the bullet was fired to the left
     BREQ  bullet_move_left      ; Move it appropriately
 bullet_stop:
-    MOV   R03,  0xFF
-    MOV   R04,  0xFF
+    MOV   R03,  0xFF            ; Move bullet off screen if stopped
+    MOV   R04,  0xFF            ; Off screen
     RET
 bullet_move_up:
     SUB   R04,  0x01         ; Move the bullet up
@@ -366,17 +359,17 @@ bullet_move_left:
 ;-  Stops bullet from moving through walls
 ;--------------------------------------------------------------------
 check_walls:
-    CMP   R03,  0x00
+    CMP   R03,  0x00              ; Check left wall
     BREQ  stop_bullet
-    CMP   R03,  0x27
+    CMP   R03,  0x27              ; Right wall
+    BREQ  stop_bullet 
+    CMP   R04,  0x00              ; Top wall
     BREQ  stop_bullet
-    CMP   R04,  0x00
-    BREQ  stop_bullet
-    CMP   R04,  0x1D
+    CMP   R04,  0x1D              ; Bottom wall
     BREQ  stop_bullet
     RET
 stop_bullet:
-    MOV   R02,  BULLET_DIRECTION_NONE
+    MOV   R02,  DIRECTION_NONE    ; Set direction to none
     RET
 ;-------------------------------------------------------------------
 
@@ -399,10 +392,10 @@ draw_horizontal_line:
     ADD    R22,  0x01          ; go from R20 to R22 inclusive
 
 draw_horiz1:
-    CALL   draw_dot         ; draw tile
+    CALL   draw_dot            ; draw tile
     ADD    R20,  0x01          ; increment column (X) count
-    CMP    R20,  R22            ; see if there are more columns
-    BRNE   draw_horiz1      ; branch if more columns
+    CMP    R20,  R22           ; see if there are more columns
+    BRNE   draw_horiz1         ; branch if more columns
     RET
 ;--------------------------------------------------------------------
 
@@ -426,10 +419,10 @@ draw_vertical_line:
     ADD    R22,  0x01         ; go from R21 to R22 inclusive
 
 draw_vert1:
-    CALL   draw_dot        ; draw tile
+    CALL   draw_dot           ; draw tile
     ADD    R21,  0x01         ; increment row (y) count
-    CMP    R21,  R22           ; see if there are more rows
-    BRNE   draw_vert1      ; branch if more rows
+    CMP    R21,  R22          ; see if there are more rows
+    BRNE   draw_vert1         ; branch if more rows
     RET
 ;--------------------------------------------------------------------
 
@@ -443,15 +436,15 @@ draw_vert1:
 ;----------------------------------------------------------------------
 draw_background:
     MOV   R19,  BG_COLOR              ; use default color
-    MOV   R23,  0x00                 ; R28 keeps track of rows
+    MOV   R23,  0x00                  ; R28 keeps track of rows
 start:
     MOV   R21,  R23                   ; load current row count
     MOV   R20,  0x00                  ; restart x coordinates
     MOV   R22,  0x27                  ; ending coordinate
-    CALL  draw_horizontal_line     ; draw a complete line
-    ADD   R23,  0x01                 ; increment row count
-    CMP   R23,  0x1E                 ; see if more rows to draw
-    BRNE  start                    ; branch to draw more rows
+    CALL  draw_horizontal_line        ; draw a complete line
+    ADD   R23,  0x01                  ; increment row count
+    CMP   R23,  0x1E                  ; see if more rows to draw
+    BRNE  start                       ; branch to draw more rows
     RET
 ;---------------------------------------------------------------------
 
@@ -469,22 +462,22 @@ draw_walls:
     MOV   R21,  0x00                 ; restart y position
     MOV   R20,  0x00                 ; restart x position
     MOV   R22,  0x28                 ; ending x position
-    CALL  draw_horizontal_line     ; draw a complete line
+    CALL  draw_horizontal_line       ; draw a complete line
 
     MOV   R21,  0x1D                 ; restart y position
     MOV   R20,  0x00                 ; restart x position
     MOV   R22,  0x28                 ; ending x position
-    CALL  draw_horizontal_line     ; draw a complete line
+    CALL  draw_horizontal_line       ; draw a complete line
 
     MOV   R21,  0x00                 ; restart y position
     MOV   R20,  0x00                 ; restart x position
     MOV   R22,  0x1E                 ; ending y position
-    CALL  draw_vertical_line       ; draw a complete line
+    CALL  draw_vertical_line         ; draw a complete line
 
     MOV   R21,  0x00                 ; restart y position
     MOV   R20,  0x27                 ; restart x position
     MOV   R22,  0x1E                 ; ending y position
-    CALL  draw_vertical_line       ; draw a complete line
+    CALL  draw_vertical_line         ; draw a complete line
 
     RET
 ;---------------------------------------------------------------------
@@ -502,24 +495,24 @@ draw_dot:
     MOV   R25,  R21         ; copy Y coordinate
     MOV   R24,  R20         ; copy X coordinate
 
-    AND   R24,  0x3F       ; make sure top 2 bits cleared
-    AND   R25,  0x1F       ; make sure top 3 bits cleared
+    AND   R24,  0x3F        ; make sure top 2 bits cleared
+    AND   R25,  0x1F        ; make sure top 3 bits cleared
 
     ;--- you need bottom two bits of R25 into top two bits of R24
-    LSR   R25            ; shift LSB into carry
-    BRCC  bit7          ; no carry, jump to next bit
-    OR    R24,  0x40       ; there was a carry, set bit
-    CLC                 ; freshen bit, do one more left shift
+    LSR   R25               ; shift LSB into carry
+    BRCC  bit7              ; no carry, jump to next bit
+    OR    R24,  0x40        ; there was a carry, set bit
+    CLC                     ; freshen bit, do one more left shift
 
 bit7:
-    LSR   R25            ; shift LSB into carry
-    BRCC  dd_out        ; no carry, jump to output
-    OR    R24,  0x80       ; set bit if needed
+    LSR   R25               ; shift LSB into carry
+    BRCC  dd_out            ; no carry, jump to output
+    OR    R24,  0x80        ; set bit if needed
 
 dd_out:
-    OUT   R24,  VGA_LADD   ; write low 8 address bits to register
-    OUT   R25,  VGA_HADD   ; write hi 3 address bits to register
-    OUT   R19,  VGA_COLOR  ; write data to frame buffer
+    OUT   R24,  VGA_LADD    ; write low 8 address bits to register
+    OUT   R25,  VGA_HADD    ; write hi 3 address bits to register
+    OUT   R19,  VGA_COLOR   ; write data to frame buffer
     RET
 ; --------------------------------------------------------------------
 
@@ -535,18 +528,18 @@ dd_out:
 ;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 detect_hits:
-    CMP  R03,  R06
+    CMP  R03,  R06          ; Check if bullet x = enemy x
     BREQ hit_check_one
     RET
 
 hit_check_one:
-    CMP  R04,  R07
+    CMP  R04,  R07          ; Check if bullet y = enemy y
     BREQ hit_check_two
     RET
 
 hit_check_two:
-    MOV  R06,  0xFE
-    MOV  R07,  0xFE
+    MOV  R06,  0xFE         ; Move enemy off screen if hit
+    MOV  R07,  0xFE         ; Off screen
 
     RET
 ;---------------------------------------------------------------------
@@ -562,9 +555,9 @@ hit_check_two:
 ;---------------------------------------------------------------------
 draw_player:
     MOV  R19,  PLAYER_COLOR  ; Set the draw-color to the player's color
-    MOV  R21,  R01        ; Move the player's y coord into the draw y coord
-    MOV  R20,  R00        ; Move the player's x coord into the draw x coord
-    CALL draw_dot      ; Draw a dot of the specified color at the specified location
+    MOV  R21,  R01           ; Move the player's y coord into the draw y coord
+    MOV  R20,  R00           ; Move the player's x coord into the draw x coord
+    CALL draw_dot            ; Draw a dot at the location
     RET
 ;---------------------------------------------------------------------
 
@@ -578,18 +571,22 @@ draw_player:
 ;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 draw_enemy:
-    CMP  R06,  0xFE
+    CMP  R06,  0xFE            ; Check if enemy is off screen
     BRNE draw_enemy_continue
-    CMP  R07,  0xFE
+    CMP  R07,  0xFE            ; Check if enemy is off screen
     BRNE draw_enemy_continue
-    MOV  R06,  0x10
-    MOV  R07,  0x10
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R06,  R05             ; Move to new spawn
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R07,  R05             ; Move to new spawn
 
 draw_enemy_continue:
-    MOV  R19,  ENEMY_COLOR  ; Set the draw-color to the player's color
-    MOV  R20,  R06        ; Move the player's y coord into the draw y coord
-    MOV  R21,  R07        ; Move the player's x coord into the draw x coord
-    CALL draw_dot      ; Draw a dot of the specified color at the specified location
+    MOV  R19,  ENEMY_COLOR     ; Set the draw-color to the player's color
+    MOV  R20,  R06             ; Move the player's y into the draw y
+    MOV  R21,  R07             ; Move the player's x into the draw x
+    CALL draw_dot              ; Draw a dot at the location
     RET
 ;---------------------------------------------------------------------
 
@@ -603,41 +600,37 @@ draw_enemy_continue:
 ;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 move_enemy:
-    CMP  R06,  0xFE
-    BREQ enemy_in_wall
-    BRN  move_enemy_start
-
-enemy_in_wall:
-    MOV  R06,  0xFE
-    MOV  R07,  0xFE
+    CMP  R06,  0xFE           ; 
+    BRNE move_enemy_start
     RET
 
 move_enemy_start:
-    MOV  R20,  R06
-    MOV  R21,  R07
-    MOV  R19,  BG_COLOR
-    CALL draw_dot
+    MOV  R20,  R06             ; draw over old location with floor
+    MOV  R21,  R07             ;  |
+    MOV  R19,  BG_COLOR        ;  |
+    CALL draw_dot              ;  ▼
 
-    AND  R05,  0x03
-    CMP  R05,  ENEMY_DIRECTION_UP
-    BREQ move_enemy_up
-    CMP  R05,  ENEMY_DIRECTION_LEFT
-    BREQ move_enemy_left
-    CMP  R05,  ENEMY_DIRECTION_DOWN
-    BREQ move_enemy_down
-    CMP  R05,  ENEMY_DIRECTION_RIGHT
-    BREQ move_enemy_right
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x03            ; get a number less than 4
+    CMP  R05,  DIRECTION_UP    ; Random number determines the direction
+    BREQ move_enemy_up         ;  |
+    CMP  R05,  DIRECTION_LEFT  ;  |
+    BREQ move_enemy_left       ;  |
+    CMP  R05,  DIRECTION_DOWN  ;  |
+    BREQ move_enemy_down       ;  |
+    CMP  R05,  DIRECTION_RIGHT ;  |
+    BREQ move_enemy_right      ;  ▼
 
-move_enemy_up:
+move_enemy_up:                 ; Up one square
     SUB  R07,  0x01
     RET
-move_enemy_left:
+move_enemy_left:               ; Left one square
     SUB  R06,  0x01
     RET
-move_enemy_down:
+move_enemy_down:               ; Down one square
     ADD  R07,  0x01
     RET
-move_enemy_right:
+move_enemy_right:              ; Right one square
     ADD  R06,  0x01
     RET
 ;---------------------------------------------------------------------
@@ -652,15 +645,17 @@ move_enemy_right:
 ;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 draw_bullet:
-    MOV R19,  BULLET_COLOR  ; Set the draw-color to the bullet's color
-    MOV R21,  R04       ; Move the bullet's y coord into the draw y coord
-    MOV R20,  R03       ; Move the bullet's x coord into the draw x coord
-    CALL draw_dot     ; Draw a dot of the specified color at the specified location
+    MOV R19,  BULLET_COLOR     ; Set the draw-color to the bullet's color
+    MOV R20,  R03              ; Move the bullet's x into the draw x
+    MOV R21,  R04              ; Move the bullet's y into the draw y
+    CALL draw_dot              ; Draw a dot at the location
     RET
 ;---------------------------------------------------------------------
 
 ;---------------------------------------------------------------------
-;- Subroutine: delay_loop
+;- Subroutine: delay_loop 
+;-
+;- Runs Through inside * middle * outside times
 ;-
 ;- Parameters:
 ;-  reg0 = loop count
