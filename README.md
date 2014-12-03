@@ -39,3 +39,7 @@
 - Fixed inability to move right
 - Added a single, randomly moving enemy
 - Shooting the enemy kills it
+
+### Version 0.1.4
+- Register usage is now consistant and easier to understand
+
