@@ -92,7 +92,6 @@
 ;- R15
 ;- R16
 ;- R17
-;- R18
 ;-
 ;- Input
 ;- R18: Key Pressed
@@ -245,7 +244,7 @@ reset_ps2_register:
 move_up:
     CMP  R01,    0x01   ; Check if player is already at the edge of the screen
     BREQ move_up_end    ; If so, do not move the player
-    MOV  R18,    BG_COLOR  ; Set draw-color to the background color
+    MOV  R19,    BG_COLOR  ; Set draw-color to the background color
     MOV  R20,     R00    ; Set draw-x-coord to the player's old location
     MOV  R21,     R01    ; Set draw-y-coord to the player's old location
     CALL draw_dot     ; Fill in the player's old location with the background color
@@ -257,7 +256,7 @@ move_up_end:
 move_left:
     CMP  R00,    0x01   ; Check if player is already at the edge of the screen
     BREQ move_left_end  ; If so, do not move the player
-    MOV  R18,    BG_COLOR  ; Set draw-color to the background color
+    MOV  R19,    BG_COLOR  ; Set draw-color to the background color
     MOV  R20,     R00    ; Set draw-x-coord to the player's old location
     MOV  R21,     R01    ; Set draw-y-coord to the player's old location
     CALL draw_dot     ; Fill in the player's old location with the background color
@@ -269,7 +268,7 @@ move_left_end:
 move_down:
     CMP  R01,    0x1C   ; Check if player is already at the edge of the screen
     BREQ move_down_end  ; If so, do not move the player
-    MOV  R18,    BG_COLOR  ; Set draw-color to the background color
+    MOV  R19,    BG_COLOR  ; Set draw-color to the background color
     MOV  R20,     R00    ; Set draw-x-coord to the player's old location
     MOV  R21,     R01    ; Set draw-y-coord to the player's old location
     CALL draw_dot     ; Fill in the player's old location with the background color
@@ -281,7 +280,7 @@ move_down_end:
 move_right:
     CMP  R00,    0x26    ; Check if player is already at the edge of the screen
     BREQ move_right_end ; If so, do not move the player
-    MOV  R18,   BG_COLOR ; Set draw-color to the background color
+    MOV  R19,   BG_COLOR ; Set draw-color to the background color
     MOV  R20,     R00    ; Set draw-x-coord to the player's old location
     MOV  R21,     R01    ; Set draw-y-coord to the player's old location
     CALL draw_dot     ; Fill in the player's old location with the background color
@@ -333,7 +332,7 @@ move_bullet:
     BREQ  bullet_stop
     MOV   R20,  R03
     MOV   R21,  R04
-    MOV   R18,  BG_COLOR
+    MOV   R19,  BG_COLOR
     CALL  draw_dot
     CMP   R02,  BULLET_DIRECTION_UP  ; Check if the bullet was fired upwards
     BREQ  bullet_move_up        ; Move it appropriately
@@ -384,7 +383,7 @@ stop_bullet:
 ;--------------------------------------------------------------------
 ;-  Subroutine: draw_horizontal_line
 ;-
-;-  Draws a horizontal line from (R20,R21) to (R22,R21) using color in R18.
+;-  Draws a horizontal line from (R20,R21) to (R22,R21) using color in R19.
 ;-   This subroutine works by consecutive calls to drawdot, meaning
 ;-   that a horizontal line is nothing more than a bunch of dots.
 ;-
@@ -392,7 +391,7 @@ stop_bullet:
 ;-   R20  = starting x-coordinate
 ;-   R21  = y-coordinate
 ;-   R22  = ending x-coordinate
-;-   R18  = color used for line
+;-   R19  = color used for line
 ;-
 ;- Tweaked registers: R20,R22
 ;--------------------------------------------------------------------
@@ -411,7 +410,7 @@ draw_horiz1:
 ;---------------------------------------------------------------------
 ;-  Subroutine: draw_vertical_line
 ;-
-;-  Draws a horizontal line from (R20,R21) to (R20,R22) using color in R18.
+;-  Draws a horizontal line from (R20,R21) to (R20,R22) using color in R19.
 ;-   This subroutine works by consecutive calls to drawdot, meaning
 ;-   that a vertical line is nothing more than a bunch of dots.
 ;-
@@ -419,7 +418,7 @@ draw_horiz1:
 ;-   R20  = x-coordinate
 ;-   R21  = starting y-coordinate
 ;-   R22  = ending y-coordinate
-;-   R18  = color used for line
+;-   R19  = color used for line
 ;-
 ;- Tweaked registers: R21,R22
 ;--------------------------------------------------------------------
@@ -443,7 +442,7 @@ draw_vert1:
 ;-  Tweaked registers: R28,R21,R20,R22
 ;----------------------------------------------------------------------
 draw_background:
-    MOV   R18,  BG_COLOR              ; use default color
+    MOV   R19,  BG_COLOR              ; use default color
     MOV   R23,  0x00                 ; R28 keeps track of rows
 start:
     MOV   R21,  R23                   ; load current row count
@@ -465,7 +464,7 @@ start:
 ;-  Tweaked registers: R22
 ;----------------------------------------------------------------------
 draw_walls:
-    MOV   R18,  WALL_COLOR           ; use wall color
+    MOV   R19,  WALL_COLOR           ; use wall color
 
     MOV   R21,  0x00                 ; restart y position
     MOV   R20,  0x00                 ; restart x position
@@ -495,7 +494,7 @@ draw_walls:
 ;-
 ;- This subroutine draws a dot on the display the given coordinates:
 ;-
-;- (X,Y) = (R20,R21)  with a color stored in R18
+;- (X,Y) = (R20,R21)  with a color stored in R19
 ;-
 ;- Tweaked registers: R25,R24
 ;---------------------------------------------------------------------
@@ -520,7 +519,7 @@ bit7:
 dd_out:
     OUT   R24,  VGA_LADD   ; write low 8 address bits to register
     OUT   R25,  VGA_HADD   ; write hi 3 address bits to register
-    OUT   R18,  VGA_COLOR  ; write data to frame buffer
+    OUT   R19,  VGA_COLOR  ; write data to frame buffer
     RET
 ; --------------------------------------------------------------------
 
@@ -533,7 +532,7 @@ dd_out:
 ;- Shot (X, Y) = (R03, R04)
 ;- Enemy (X, Y) = (R06, R07)
 ;-
-;- Tweaked registers: R25, R24, R18, R21, R20
+;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 detect_hits:
     CMP  R03,  R06
@@ -559,10 +558,10 @@ hit_check_two:
 ;-
 ;- (X, Y) = (R00, R01)
 ;-
-;- Tweaked registers: R25, R24, R18, R21, R20
+;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 draw_player:
-    MOV  R18,  PLAYER_COLOR  ; Set the draw-color to the player's color
+    MOV  R19,  PLAYER_COLOR  ; Set the draw-color to the player's color
     MOV  R21,  R01        ; Move the player's y coord into the draw y coord
     MOV  R20,  R00        ; Move the player's x coord into the draw x coord
     CALL draw_dot      ; Draw a dot of the specified color at the specified location
@@ -576,7 +575,7 @@ draw_player:
 ;-
 ;- (X, Y) = (R06, R07)
 ;-
-;- Tweaked registers: R25, R24, R18, R21, R20
+;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 draw_enemy:
     CMP  R06,  0xFE
@@ -587,7 +586,7 @@ draw_enemy:
     MOV  R07,  0x10
 
 draw_enemy_continue:
-    MOV  R18,  ENEMY_COLOR  ; Set the draw-color to the player's color
+    MOV  R19,  ENEMY_COLOR  ; Set the draw-color to the player's color
     MOV  R20,  R06        ; Move the player's y coord into the draw y coord
     MOV  R21,  R07        ; Move the player's x coord into the draw x coord
     CALL draw_dot      ; Draw a dot of the specified color at the specified location
@@ -601,7 +600,7 @@ draw_enemy_continue:
 ;-
 ;- (X, Y) = (R06, R07)
 ;-
-;- Tweaked registers: R25, R24, R18, R21, R20
+;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 move_enemy:
     CMP  R06,  0xFE
@@ -616,7 +615,7 @@ enemy_in_wall:
 move_enemy_start:
     MOV  R20,  R06
     MOV  R21,  R07
-    MOV  R18,  BG_COLOR
+    MOV  R19,  BG_COLOR
     CALL draw_dot
 
     AND  R05,  0x03
@@ -650,10 +649,10 @@ move_enemy_right:
 ;-
 ;- (X, Y) = (R03, R04)
 ;-
-;- Tweaked registers: R25, R24, R18, R21, R20
+;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
 draw_bullet:
-    MOV R18,  BULLET_COLOR  ; Set the draw-color to the bullet's color
+    MOV R19,  BULLET_COLOR  ; Set the draw-color to the bullet's color
     MOV R21,  R04       ; Move the bullet's y coord into the draw y coord
     MOV R20,  R03       ; Move the bullet's x coord into the draw x coord
     CALL draw_dot     ; Draw a dot of the specified color at the specified location
