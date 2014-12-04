@@ -17,13 +17,15 @@
 .EQU VGA_HADD    = 0x90 ; port for vga x         OUTPUT
 .EQU VGA_LADD    = 0x91 ; port for vga y         OUTPUT
 .EQU VGA_COLOR   = 0x92 ; port for vga color     OUTPUT
-.EQU LED_PORT    = 0x40 ; port for LEDs          OUTPUT
+.EQU LEDS        = 0x40 ; port for LEDs          OUTPUT
 .EQU SSEG        = 0x81 ; port for display       OUTPUT
 
 ;-- Keyboard Stuff -------------------------------------------------------
 .EQU PS2_KEY_CODE = 0x44 ; Port for Key Code (data)
+.EQU PS2_STATUS   = 0x45 ; Port for status
 .EQU PS2_CONTROL  = 0x46 ; Ready for data control
 .EQU int_flag     = 0x01 ; interrupt data from keyboard
+.EQU KEY_UP       = 0xF0 ; Key release data
 ;--------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
@@ -220,12 +222,12 @@ key_up_check:
 
 
 set_skip_flag:
-    ADD   R30, 0x01            ; indicate key-up found
+    ADD   R30, KEY_UP            ; indicate key-up found
     BRN   reset_ps2_register
 
-;reset_skip_flag:
-;   MOV   R30, 0x00           ; indicate key-up handles
-;   BRN   reset_ps2_register
+reset_skip_flag:
+   MOV   R30, 0x00           ; indicate key-up handles
+   BRN   reset_ps2_register
 ;-------------------------------------------------------------------
 
 ;-------------------------------------------------------------------
@@ -572,6 +574,7 @@ no_hit_player:
 
 game_over:
     CLI
+    OUT  R17,  SSEG
     BRN  game_over
 ;---------------------------------------------------------------------
 
@@ -748,7 +751,7 @@ move_enemy_two_right:          ; Right one square
     BRN  move_enemy_three
 
 move_enemy_three:
-    CMP  R15,  0x03            ; Only if level 2
+    CMP  R15,  0x03            ; Only if level 3
     BRNE move_enemy_end 
 
     MOV  R20,  R10             ; draw over old location with floor

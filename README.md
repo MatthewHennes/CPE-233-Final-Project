@@ -11,6 +11,10 @@
 
 ## Changelog
 
+### Version 0.3.1
+- Added missing keyboard constants
+- Enabled reset_skip_flag subroutine
+
 ### Version 0.3.0
 - Game now includes lives and increasing difficulty
 - Level 2 spawn 2 enemies, level 3 spawns 3
