@@ -3,7 +3,7 @@
 ;- Programmers: Matt Hennes & Tyler Heucke
 ;- Creation Date: 11/20/14
 ;-
-;- Version:     0.2.0
+;- Version:     0.2.1
 ;- Description: A Binding of Isaac clone running on the RAT CPU
 ;--------------------------------------------------------------------------
 
@@ -43,6 +43,9 @@
 .EQU DIRECTION_NONE         = 0x04
 
 .EQU BULLET_COLOR           = 0x03 ; Blue
+
+.EQU NUM_LIVES              = 0x03
+.EQU STARTING_SCORE         = 0x00
 ;--------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
@@ -83,8 +86,10 @@
 ;- R13
 ;- R14
 ;- R15
-;- R16
-;- R17
+;-
+;- Game
+;- R16: Lives
+;- R17: Score
 ;-
 ;- Input
 ;- R18: Key Pressed
@@ -117,6 +122,8 @@
 
 init:
     MOV   R30,    0x00      ; clear key-up flag
+    MOV   R16,    NUM_LIVES ; Store number of lives
+    MOV   R17,    STARTING_SCORE
     CALL  draw_background   ; draw using default color
     CALL  draw_walls        ; 4 lines around edge of screen
     MOV   R00,    0x14      ; Starting player x-coord = 20
@@ -141,6 +148,7 @@ no_move:
     CALL  draw_player       ; draw the player
     CALL  draw_enemy        ; draw the enemy
     CALL  delay_loop        ; create a delay between in-game "ticks"
+    OUT   R17, SSEG         ; output score
     BRN   main              ; repeat main subroutine
 
 ;--------------------------------------------------------------
@@ -538,6 +546,7 @@ hit_check_one:
     RET
 
 hit_check_two:
+    ADD  R17,  0x01         ; Score one point
     MOV  R06,  0xFE         ; Move enemy off screen if hit
     MOV  R07,  0xFE         ; Off screen
 

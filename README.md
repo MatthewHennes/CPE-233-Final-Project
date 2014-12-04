@@ -1,6 +1,6 @@
 # The Binding of Nexys
 
-### Version 0.2.0
+### Version 0.2.1
 
 #### Matt Hennes and Tyler Heucke
 
@@ -10,6 +10,10 @@
 - Arrow keys for shooting
 
 ## Changelog
+
+### Version 0.2.1
+- Score is displayed on seven segment display
+- Shoot an enemy to score a point
 
 ### Version 0.2.0
 - Added support for seven segment display
@@ -71,8 +75,10 @@
 ;- R13
 ;- R14
 ;- R15
-;- R16
-;- R17
+;-
+;- Game
+;- R16: Lives
+;- R17: Score
 ;-
 ;- Input
 ;- R18: Key Pressed
