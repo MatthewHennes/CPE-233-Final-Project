@@ -11,6 +11,9 @@
 
 ## Changelog
 
+### Version 0.2.2
+- Rudimentary lives system implemented
+
 ### Version 0.2.1
 - Score is displayed on seven segment display
 - Shoot an enemy to score a point

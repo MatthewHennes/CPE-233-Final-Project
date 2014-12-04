@@ -524,33 +524,45 @@ dd_out:
     RET
 ; --------------------------------------------------------------------
 
-;---------------------------------------------------------------------
+;--------------------------------------------------------------------
 ;- Subroutine: detect_hits
-;-
-;- Detects the player's shot hitting enemies
-;-
-;- Player (X, Y) = (R00, R01)
-;- Shot (X, Y) = (R03, R04)
-;- Enemy (X, Y) = (R06, R07)
-;-
-;- Tweaked registers: R25, R24, R19, R21, R20
+;- 
+;- Detects all hits occuring
+;- 
+;- Player = R00, R01
+;- Bullet = R03, R04
+;- Enemy1 = R06, R07
 ;---------------------------------------------------------------------
 detect_hits:
     CMP  R03,  R06          ; Check if bullet x = enemy x
-    BREQ hit_check_one
-    RET
-
-hit_check_one:
+    BRNE no_hit_enemy
     CMP  R04,  R07          ; Check if bullet y = enemy y
-    BREQ hit_check_two
+    BRNE no_hit_enemy
+    ADD  R17,  0x01         ; Score one point for hit
+    MOV  R06,  0xFE         ; Move enemy off screen to respawn
+    MOV  R07,  0xFE         ; Move enemy off screen
+
+no_hit_enemy:
+    CMP  R00,  R06          ; Check if player x = enemy x
+    BRNE no_hit_player
+    CMP  R01,  R07          ; Check if player y = enemy y
+    BRNE no_hit_player
+    CMP  R16,  0x00         ; Check if out of lives
+    BREQ game_over
+    SUB  R16,  0x01         ; Subtract 1 life for death
+    MOV  R00,  0x14         ; Respawn player x
+    MOV  R01,  0x0F         ; Respawn player y
+    CLI
+    CALL delay_loop         ; Respawn delay
+    SEI
     RET
 
-hit_check_two:
-    ADD  R17,  0x01         ; Score one point
-    MOV  R06,  0xFE         ; Move enemy off screen if hit
-    MOV  R07,  0xFE         ; Off screen
-
+no_hit_player:
     RET
+
+game_over:
+    CLI
+    BRN  game_over
 ;---------------------------------------------------------------------
 
 ;---------------------------------------------------------------------
