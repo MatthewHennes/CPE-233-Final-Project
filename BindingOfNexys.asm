@@ -3,7 +3,7 @@
 ;- Programmers: Matt Hennes & Tyler Heucke
 ;- Creation Date: 11/20/14
 ;-
-;- Version:     0.2.1
+;- Version:     0.3.2
 ;- Description: A Binding of Isaac clone running on the RAT CPU
 ;--------------------------------------------------------------------------
 
@@ -609,7 +609,13 @@ draw_player:
 draw_enemy:                    ; spawns first enemy
     CMP  R06,  0xFE            ; Check if enemy is off screen
     BRNE spawn_enemy_two
-    CMP  R07,  0xFE            ; Check if enemy is off screen
+    CMP  R06,  0x00            ; Check if enemy is in left wall
+    BRNE spawn_enemy_two
+    CMP  R06,  0x1E            ; Check if enemy is in right wall
+    BRNE spawn_enemy_two
+    CMP  R07,  0x00            ; Check if enemy is in top wall
+    BRNE spawn_enemy_two
+    CMP  R07,  0x13            ; Check if enemy is in left wall
     BRNE spawn_enemy_two
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
@@ -623,7 +629,13 @@ spawn_enemy_two:               ; spawns extra enemy if necessary
     BRNE spawn_enemy_three
     CMP  R08,  0xFE            ; Check if enemy is off screen
     BRNE spawn_enemy_three
-    CMP  R09,  0xFE            ; Check if enemy is off screen
+    CMP  R08,  0x00            ; Check if enemy is in left wall
+    BRNE spawn_enemy_three
+    CMP  R08,  0x1E            ; Check if enemy is in right wall
+    BRNE spawn_enemy_three
+    CMP  R09,  0x00            ; Check if enemy is in top wall
+    BRNE spawn_enemy_three
+    CMP  R09,  0x13            ; Check if enemy is in left wall
     BRNE spawn_enemy_three
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
@@ -636,20 +648,32 @@ spawn_enemy_three:             ; spawns both extra enemies if necessary
     CMP  R15,  0x03            ; Check if on level 2 or 3
     BRNE draw_enemy_continue
     CMP  R10,  0xFE            ; Check if enemy is off screen
-    BRNE draw_enemy_three_cont
-    CMP  R11,  0xFE            ; Check if enemy is off screen
-    BRNE draw_enemy_three_cont
+    BRNE spawn_enemy_three_cont
+    CMP  R10,  0x00            ; Check if enemy is in left wall
+    BRNE spawn_enemy_three_cont
+    CMP  R10,  0x1E            ; Check if enemy is in right wall
+    BRNE spawn_enemy_three_cont
+    CMP  R11,  0x00            ; Check if enemy is in top wall
+    BRNE spawn_enemy_three_cont
+    CMP  R11,  0x13            ; Check if enemy is in left wall
+    BRNE spawn_enemy_three_cont
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
     MOV  R10,  R05             ; Move enemy 2 x to new spawn
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
     MOV  R11,  R05             ; Move enemy 2 y to new spawn
-draw_enemy_three_cont:
-    CMP  R08,  0xFE            ; Check if enemy Iis off screen
+spawn_enemy_three_cont:
+    CMP  R08,  0xFE            ; Check if enemy is off screen
     BRNE draw_enemy_continue
-    CMP  R09,  0xFE            ; Check if enemy is off screen
-    BRNE draw_enemy_continue
+    CMP  R08,  0x00            ; Check if enemy is in left wall
+    BRNE draw_enemy_continue 
+    CMP  R08,  0x1E            ; Check if enemy is in right wall
+    BRNE draw_enemy_continue 
+    CMP  R09,  0x00            ; Check if enemy is in top wall
+    BRNE draw_enemy_continue 
+    CMP  R09,  0x13            ; Check if enemy is in left wall
+    BRNE draw_enemy_continue 
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
     MOV  R08,  R05             ; Move enemy 3 x to new spawn
@@ -721,6 +745,8 @@ move_enemy_right:              ; Right one square
 move_enemy_two:
     CMP  R15,  0x02            ; Only if level 2
     BRNE move_enemy_three 
+    CMP  R08,  0xFE            ; Check if enemy is "dead"
+    BRNE move_enemy_three
 
     MOV  R20,  R08             ; draw over old location with floor
     MOV  R21,  R09             ;  |
@@ -753,6 +779,8 @@ move_enemy_two_right:          ; Right one square
 move_enemy_three:
     CMP  R15,  0x03            ; Only if level 3
     BRNE move_enemy_end 
+    CMP  R10,  0xFE            ; Check if enemy is "dead"
+    BRNE move_enemy_end
 
     MOV  R20,  R10             ; draw over old location with floor
     MOV  R21,  R11             ;  |

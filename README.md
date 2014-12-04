@@ -1,6 +1,6 @@
 # The Binding of Nexys
 
-### Version 0.2.1
+### Version 0.3.2
 
 #### Matt Hennes and Tyler Heucke
 
@@ -10,6 +10,10 @@
 - Arrow keys for shooting
 
 ## Changelog
+
+### Version 0.3.2
+- Enemy is now only moved if alive
+- Enemy is respawned randomly when moved off screen
 
 ### Version 0.3.1
 - Added missing keyboard constants
