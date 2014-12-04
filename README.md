@@ -1,6 +1,6 @@
 # The Binding of Nexys
 
-### Version 0.3.2
+### Version 0.3.3
 
 #### Matt Hennes and Tyler Heucke
 
@@ -10,6 +10,14 @@
 - Arrow keys for shooting
 
 ## Changelog
+
+### Version 0.3.3
+- Fixed bug where level 2 and 3 enemies didn't spawn
+- Fixed enemy hit detection
+- Fixed player hit detection
+- Walls redrawn when you score
+- Only one enemy, speeds up with score
+- Output lives to LEDs
 
 ### Version 0.3.2
 - Enemy is now only moved if alive
