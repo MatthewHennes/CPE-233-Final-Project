@@ -11,6 +11,10 @@
 
 ## Changelog
 
+### Version 0.3.0
+- Game now includes lives and increasing difficulty
+- Level 2 spawn 2 enemies, level 3 spawns 3
+
 ### Version 0.2.2
 - Rudimentary lives system implemented
 
@@ -77,9 +81,9 @@
 ;- R12
 ;- R13
 ;- R14
-;- R15
 ;-
 ;- Game
+;- R15: Level
 ;- R16: Lives
 ;- R17: Score
 ;-

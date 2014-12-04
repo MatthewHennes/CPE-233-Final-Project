@@ -85,9 +85,9 @@
 ;- R12
 ;- R13
 ;- R14
-;- R15
 ;-
 ;- Game
+;- R15: Level
 ;- R16: Lives
 ;- R17: Score
 ;-
@@ -122,6 +122,7 @@
 
 init:
     MOV   R30,    0x00      ; clear key-up flag
+    MOV   R15,    0x01      ; start on level one
     MOV   R16,    NUM_LIVES ; Store number of lives
     MOV   R17,    STARTING_SCORE
     CALL  draw_background   ; draw using default color
@@ -135,7 +136,6 @@ init:
     SEI                     ; set interrupt to receive key presses
 
 main:
-    IN    R05,    RAND_PORT ; get a random number
     CALL  move_bullet       ; update the bullet's location
     CALL  draw_bullet       ; draw the bullet
     CALL  detect_hits       ; check if bullet hit enemy
@@ -541,6 +541,16 @@ detect_hits:
     ADD  R17,  0x01         ; Score one point for hit
     MOV  R06,  0xFE         ; Move enemy off screen to respawn
     MOV  R07,  0xFE         ; Move enemy off screen
+    
+level_two:
+    CMP  R17,  0x05         ; Level 2 after 4 kills
+    BRNE level_three     
+    ADD  R15,  0x01         ; Level up!
+
+level_three:
+    CMP  R17,  0x0A         ; Level 3 after 9 kills
+    BRNE no_hit_enemy 
+    ADD  R15,  0x01         ; Level up!
 
 no_hit_enemy:
     CMP  R00,  R06          ; Check if player x = enemy x
@@ -587,15 +597,17 @@ draw_player:
 ;-
 ;- This subroutine draws the enemy on the display at the correct coordinates.
 ;-
-;- (X, Y) = (R06, R07)
+;- Enemy 1 (X, Y) = (R06, R07)
+;- Enemy 2 (X, Y) = (R08, R09)
+;- Enemy 3 (X, Y) = (R10, R11)
 ;-
 ;- Tweaked registers: R25, R24, R19, R21, R20
 ;---------------------------------------------------------------------
-draw_enemy:
+draw_enemy:                    ; spawns first enemy
     CMP  R06,  0xFE            ; Check if enemy is off screen
-    BRNE draw_enemy_continue
+    BRNE spawn_enemy_two
     CMP  R07,  0xFE            ; Check if enemy is off screen
-    BRNE draw_enemy_continue
+    BRNE spawn_enemy_two
     IN   R05,  RAND_PORT       ; get a random number
     AND  R05,  0x1F            ; get a number less than 32
     MOV  R06,  R05             ; Move to new spawn
@@ -603,12 +615,60 @@ draw_enemy:
     AND  R05,  0x1F            ; get a number less than 32
     MOV  R07,  R05             ; Move to new spawn
 
+spawn_enemy_two:               ; spawns extra enemy if necessary
+    CMP  R15,  0x02            ; Check if on level 2 or 3
+    BRNE spawn_enemy_three
+    CMP  R08,  0xFE            ; Check if enemy is off screen
+    BRNE spawn_enemy_three
+    CMP  R09,  0xFE            ; Check if enemy is off screen
+    BRNE spawn_enemy_three
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R08,  R05             ; Move enemy 2 x to new spawn
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R09,  R05             ; Move enemy 2 y to new spawn
+
+spawn_enemy_three:             ; spawns both extra enemies if necessary
+    CMP  R15,  0x03            ; Check if on level 2 or 3
+    BRNE draw_enemy_continue
+    CMP  R10,  0xFE            ; Check if enemy is off screen
+    BRNE draw_enemy_three_cont
+    CMP  R11,  0xFE            ; Check if enemy is off screen
+    BRNE draw_enemy_three_cont
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R10,  R05             ; Move enemy 2 x to new spawn
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R11,  R05             ; Move enemy 2 y to new spawn
+draw_enemy_three_cont:
+    CMP  R08,  0xFE            ; Check if enemy Iis off screen
+    BRNE draw_enemy_continue
+    CMP  R09,  0xFE            ; Check if enemy is off screen
+    BRNE draw_enemy_continue
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R08,  R05             ; Move enemy 3 x to new spawn
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x1F            ; get a number less than 32
+    MOV  R09,  R05             ; Move enemy 3 y to new spawn
+
 draw_enemy_continue:
     MOV  R19,  ENEMY_COLOR     ; Set the draw-color to the player's color
-    MOV  R20,  R06             ; Move the player's y into the draw y
-    MOV  R21,  R07             ; Move the player's x into the draw x
+    MOV  R20,  R06             ; Move enemy1 x into the draw x
+    MOV  R21,  R07             ; Move enemy1 y into the draw x
     CALL draw_dot              ; Draw a dot at the location
+    MOV  R20,  R08             ; Move enemy2 x into the draw x
+    MOV  R21,  R09             ; Move enemy2 y into the draw y
+    CALL draw_dot              ; Draw a dot at the location
+    MOV  R20,  R10             ; Move enemy3 x into the draw x
+    MOV  R21,  R11             ; Move enemy3 y into the draw y
+    CALL draw_dot              ; Draw a dot at the location
+
+draw_enemy_end:
     RET
+
 ;---------------------------------------------------------------------
 
 ;---------------------------------------------------------------------
@@ -644,15 +704,82 @@ move_enemy_start:
 
 move_enemy_up:                 ; Up one square
     SUB  R07,  0x01
-    RET
+    BRN  move_enemy_two
 move_enemy_left:               ; Left one square
     SUB  R06,  0x01
-    RET
+    BRN  move_enemy_two
 move_enemy_down:               ; Down one square
     ADD  R07,  0x01
-    RET
+    BRN  move_enemy_two
 move_enemy_right:              ; Right one square
     ADD  R06,  0x01
+    BRN  move_enemy_two
+
+move_enemy_two:
+    CMP  R15,  0x02            ; Only if level 2
+    BRNE move_enemy_three 
+
+    MOV  R20,  R08             ; draw over old location with floor
+    MOV  R21,  R09             ;  |
+    CALL draw_dot              ;  ▼
+
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x03            ; get a number less than 4
+    CMP  R05,  DIRECTION_UP    ; Random number determines the direction
+    BREQ move_enemy_two_up     ;  |
+    CMP  R05,  DIRECTION_LEFT  ;  |
+    BREQ move_enemy_two_left   ;  |
+    CMP  R05,  DIRECTION_DOWN  ;  |
+    BREQ move_enemy_two_down   ;  |
+    CMP  R05,  DIRECTION_RIGHT ;  |
+    BREQ move_enemy_two_right  ;  ▼
+
+move_enemy_two_up:             ; Up one square
+    SUB  R09,  0x01
+    BRN  move_enemy_three
+move_enemy_two_left:           ; Left one square
+    SUB  R08,  0x01
+    BRN  move_enemy_three
+move_enemy_two_down:           ; Down one square
+    ADD  R09,  0x01
+    BRN  move_enemy_three
+move_enemy_two_right:          ; Right one square
+    ADD  R08,  0x01
+    BRN  move_enemy_three
+
+move_enemy_three:
+    CMP  R15,  0x03            ; Only if level 2
+    BRNE move_enemy_end 
+
+    MOV  R20,  R10             ; draw over old location with floor
+    MOV  R21,  R11             ;  |
+    CALL draw_dot              ;  ▼
+
+    IN   R05,  RAND_PORT       ; get a random number
+    AND  R05,  0x03            ; get a number less than 4
+    CMP  R05,  DIRECTION_UP    ; Random number determines the direction
+    BREQ move_enemy_three_up   ;  |
+    CMP  R05,  DIRECTION_LEFT  ;  |
+    BREQ move_enemy_three_left ;  |
+    CMP  R05,  DIRECTION_DOWN  ;  |
+    BREQ move_enemy_three_down ;  |
+    CMP  R05,  DIRECTION_RIGHT ;  |
+    BREQ move_enemy_three_right;  ▼
+
+move_enemy_three_up:           ; Up one square
+    SUB  R11,  0x01
+    BRN  move_enemy_end
+move_enemy_three_left:         ; Left one square
+    SUB  R10,  0x01
+    BRN  move_enemy_end
+move_enemy_three_down:         ; Down one square
+    ADD  R11,  0x01
+    BRN  move_enemy_end
+move_enemy_three_right:        ; Right one square
+    ADD  R10,  0x01
+    BRN  move_enemy_end
+
+move_enemy_end:
     RET
 ;---------------------------------------------------------------------
 
